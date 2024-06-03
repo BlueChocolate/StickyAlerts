@@ -14,10 +14,9 @@ namespace StickyAlerts.Views
     /// </summary>
     public partial class ShellWindow : HandyControl.Controls.Window
     {
-        public ShellWindow(ShellViewModel shellViewModel)
+        public ShellWindow()
         {
             InitializeComponent();
-            DataContext = shellViewModel;
         }
 
         private void NotifyIcon_MouseDoubleClick(object sender, System.Windows.RoutedEventArgs e)

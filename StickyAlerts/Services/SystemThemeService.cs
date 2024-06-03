@@ -28,6 +28,12 @@ namespace StickyAlerts.Services
             _oldTheme = GetTheme();
         }
 
+        ~SystemThemeService()
+        {
+            _themeChangeTimer.Stop();
+            _themeChangeTimer.Dispose();
+        }
+
         public void StartMonitor()
         {
             _themeChangeTimer.Start();

@@ -2,11 +2,13 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StickyAlerts.Models;
+using StickyAlerts.ViewModels;
 using StickyAlerts.Views;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime;
@@ -19,29 +21,36 @@ namespace StickyAlerts.Services
 {
     public interface IAlertService
     {
-        public ObservableCollection<Alert> Alerts { get; }
+        public ObservableCollection<AlertViewModel> Alerts { get; }
         public void Align();
         public void Load();
         public void Save();
         public void Add();
-        public void Add(string title, string note, DateTime deadline, bool isVisible = true, bool showNote = false);
+        public void Add(string title, string note, DateTime deadline, bool alertVisible = true, bool countdownVisible = true, bool noteVisible = false);
+        public void Delete(Guid id);
+        public void Delete(AlertViewModel alert);
     }
 
     public class AlertService : IAlertService
     {
+        private List<Alert> _alerts;
         private ConcurrentDictionary<Guid, AlertWindow> _alertWindows;
         private ISettingsService<UserSettings> _userSettings;
         private ILogger<AlertService> _logger;
         private readonly JsonSerializerOptions _jsonSerializerOptions;
 
-        public ObservableCollection<Alert> Alerts { get; private set; }
+        public ObservableCollection<AlertViewModel> Alerts { get; private set; }
 
         public AlertService(ISettingsService<UserSettings> userSettings, ILogger<AlertService> logger)
         {
+            _alerts = [];
             _alertWindows = new ConcurrentDictionary<Guid, AlertWindow>();
             _userSettings = userSettings;
             _logger = logger;
             _jsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true, };
+
+            Alerts = [];
+            Alerts.CollectionChanged += (sender, e) => Save();
             Load();
         }
 
@@ -55,26 +64,16 @@ namespace StickyAlerts.Services
                 if (Directory.Exists(_userSettings.Current.AlertsPath))
                 {
                     // 如果指定路径存在，则读取文件
-
                     var json = File.ReadAllText(filePath);
-                    var alerts = JsonSerializer.Deserialize<ObservableCollection<Alert>>(json);
-                    if (alerts != null)
-                    {
-                        Alerts = alerts;
-                    }
-                    else
-                    {
-                        Alerts = [];
-                        File.WriteAllText(filePath, JsonSerializer.Serialize(Alerts, _jsonSerializerOptions));
-                    }
+                    var alerts = JsonSerializer.Deserialize<List<Alert>>(json);
+                    if (alerts != null) _alerts = alerts; else File.WriteAllText(filePath, JsonSerializer.Serialize(_alerts, _jsonSerializerOptions));
                 }
                 else
                 {
                     // 如果指定路径不存在，则创建目录与文件
                     _logger.LogWarning("Failed to load alerts from {filePath}, directory not exists, try create a empty file", filePath);
                     Directory.CreateDirectory(directoryPath);
-                    Alerts = [];
-                    File.WriteAllText(filePath, JsonSerializer.Serialize(Alerts, _jsonSerializerOptions));
+                    File.WriteAllText(filePath, JsonSerializer.Serialize(_alerts, _jsonSerializerOptions));
                 }
             }
             catch (Exception e)
@@ -83,67 +82,95 @@ namespace StickyAlerts.Services
             }
 
             // 创建便笺窗体
-            foreach (var alert in Alerts)
+            foreach (var alert in _alerts)
             {
-                AddAlertWindow(alert);
+                var vm = new AlertViewModel(alert);
+                vm.PropertyChanged += (sender, e) => Save();
+                Alerts.Add(vm);
+                AddAlertWindow(vm);
             }
             Align();
             Save();
         }
 
-        private void AddAlertWindow(Alert alert)
+        private void AddAlertWindow(AlertViewModel alertViewModel)
         {
-            var alertWindow = new AlertWindow { DataContext = alert };
+            var alertWindow = new AlertWindow { DataContext = alertViewModel };
             alertWindow.UpdateLayout();
             // 愚蠢的方法，但确实有用
             alertWindow.Show();
             //alertWindow.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            alert.Width = alertWindow.ActualWidth;
-            alert.Height = alertWindow.ActualHeight;
+            alertViewModel.Width = alertWindow.ActualWidth;
+            alertViewModel.Height = alertWindow.ActualHeight;
             Save();
-            if (!alert.IsVisible) alertWindow.Hide();
-            _alertWindows.TryAdd(alert.Id, alertWindow);
+            if (!alertViewModel.AlertVisible) alertWindow.Hide();
+            _alertWindows.TryAdd(alertViewModel.Id, alertWindow);
         }
 
         public void Add()
         {
-            Add("新的便笺", string.Empty, DateTime.Today.AddDays(1).AddHours(9), true, false);
+            Add("新的便笺", string.Empty, DateTime.Today.AddDays(1).AddHours(9), true, true, false);
         }
 
-        public void Add(string title, string note, DateTime deadline, bool isVisible = true, bool showNote = false)
+        public void Add(string title, string note, DateTime deadline, bool alertVisible = true, bool countdownVisible = true, bool noteVisible = false)
         {
-            var alert = new Alert()
+            var vm = new AlertViewModel(new Alert()
             {
                 Id = Guid.NewGuid(),
                 Title = title,
                 Note = note,
                 Deadline = deadline,
                 LastModified = DateTime.Now,
-                IsVisible = isVisible,
-                ShowNote = showNote,
-            };
-            Alerts.Add(alert);
-            Sort();
-            AddAlertWindow(alert);
-            Align();
+                AlertVisible = alertVisible,
+                NoteVisible = noteVisible,
+                CountdownVisible = countdownVisible,
+            });
+            Alerts.Add(vm);
+            SortByDeadlineAndActiveState(Alerts);
+            AddAlertWindow(vm);
             Save();
+            Align();
+        }
+
+        public void Delete(Guid id)
+        {
+            if (_alertWindows.TryRemove(id, out var alertWindow)) alertWindow.Close();
+            Alerts.Remove(Alerts.First(a => a.Id == id));
+            SortByDeadlineAndActiveState(Alerts);
+            Save();
+            Align();
+        }
+
+        public void Delete(AlertViewModel alert)
+        {
+            if (_alertWindows.TryRemove(alert.Id, out var alertWindow)) alertWindow.Close();
+            Alerts.Remove(alert);
+            SortByDeadlineAndActiveState(Alerts);
+            Save();
+            Align();
         }
 
         public void Save()
         {
+            var alerts = new List<Alert>();
+            foreach (var alert in Alerts)
+            {
+                alerts.Add(alert.ToAlert());
+            }
+
             var directoryPath = _userSettings.Current.AlertsPath;
             try
             {
                 var filePath = Path.Combine(directoryPath, "Alerts.json");
                 if (Directory.Exists(directoryPath))
                 {
-                    File.WriteAllText(filePath, JsonSerializer.Serialize(Alerts, _jsonSerializerOptions));
+                    File.WriteAllText(filePath, JsonSerializer.Serialize(alerts, _jsonSerializerOptions));
                 }
                 else
                 {
                     _logger.LogWarning("Failed to save alerts to {filePath}, directory not exists, try create", filePath);
                     Directory.CreateDirectory(directoryPath);
-                    File.WriteAllText(filePath, JsonSerializer.Serialize(Alerts, _jsonSerializerOptions));
+                    File.WriteAllText(filePath, JsonSerializer.Serialize(alerts, _jsonSerializerOptions));
                 }
             }
             catch (Exception e)
@@ -161,7 +188,7 @@ namespace StickyAlerts.Services
             int columns = 1;
             var nextHeight = verticalSpacing;
 
-            Sort();
+            SortByDeadlineAndActiveState(Alerts);
             foreach (var alert in Alerts)
             {
                 if (nextHeight + (int)alert.Height > screenHeight)
@@ -169,18 +196,31 @@ namespace StickyAlerts.Services
                     columns++;
                     nextHeight = verticalSpacing;
                 }
-                _alertWindows[alert.Id].Left = screenWidth - columns * (horizontalSpacing + (int)alert.Width);
+                _alertWindows[alert.Id].Left = screenWidth - columns * (horizontalSpacing + _alertWindows[alert.Id].ActualWidth);
                 _alertWindows[alert.Id].Top = nextHeight;
-                nextHeight += verticalSpacing + (int)alert.Height;
+                nextHeight += verticalSpacing + _alertWindows[alert.Id].ActualHeight;
             }
         }
 
-        private void Sort()
+        public static void SortByDeadlineAndActiveState(List<Alert> alerts)
         {
-            List<Alert> sortedList = [.. Alerts.OrderBy(a => !a.IsVisible).ThenBy(a => a.Deadline)];
+            alerts.Sort((a, b) =>
+            {
+                if (a.AlertVisible && !b.AlertVisible) return -1;
+                if (!a.AlertVisible && b.AlertVisible) return 1;
+                return a.Deadline.CompareTo(b.Deadline);
+            });
+        }
+
+        public static void SortByDeadlineAndActiveState(ObservableCollection<AlertViewModel> alerts)
+        {
+            List<AlertViewModel> sortedList = [.. alerts.OrderBy(a => !a.IsActive).ThenBy(a => a.Deadline)];
             for (int i = 0; i < sortedList.Count; i++)
             {
-                Alerts.Move(Alerts.IndexOf(sortedList[i]), i);
+                if (alerts.IndexOf(sortedList[i]) != i)
+                {
+                    alerts.Move(alerts.IndexOf(sortedList[i]), i);
+                }
             }
         }
     }

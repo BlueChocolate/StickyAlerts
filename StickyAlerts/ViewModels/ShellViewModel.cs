@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using StickyAlerts.Models;
 using StickyAlerts.Services;
 using StickyAlerts.Views;
 using System;
@@ -13,16 +15,15 @@ namespace StickyAlerts.ViewModels
     public partial class ShellViewModel : ObservableObject
     {
         private readonly IShellService _shellService;
-        private readonly IAlertService _alertService;
 
         [ObservableProperty]
         private string _title;
 
         [ObservableProperty]
-        private AlertsView _alertsView;
+        private AlertsViewModel _alertsViewModel;
 
         [ObservableProperty]
-        private SettingsView _settingsView;
+        private SettingsViewModel _settingsViewModel;
 
         [ObservableProperty]
         private bool _isSettingsVisible;
@@ -30,12 +31,12 @@ namespace StickyAlerts.ViewModels
         [ObservableProperty]
         private bool _isNotifyIconVisible;
 
-        public ShellViewModel(IShellService shellService, IAlertService alertService, AlertsView alertsView, SettingsView settingsView)
+        public ShellViewModel(IShellService shellService, IAlertService alertService, AlertsViewModel alertsViewModel, SettingsViewModel settingsViewModel)
         {
             _shellService = shellService;
-            _alertService = alertService;
-            _alertsView = alertsView;
-            _settingsView = settingsView;
+
+            AlertsViewModel = alertsViewModel;
+            SettingsViewModel = settingsViewModel;
             Title = "Sticky Alerts";
             IsSettingsVisible = false;
         }
@@ -61,7 +62,7 @@ namespace StickyAlerts.ViewModels
         [RelayCommand]
         private void AddAlert()
         {
-            _alertService.Add();
+            WeakReferenceMessenger.Default.Send(new AlertCollectionAddingMessage());
         }
 
         [RelayCommand]

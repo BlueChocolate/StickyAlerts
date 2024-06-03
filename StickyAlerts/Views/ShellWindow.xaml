@@ -50,7 +50,6 @@
             Grid.Row="0"
             hc:WindowAttach.IsDragElement="True"
             Background="{DynamicResource RegionBrush}">
-
             <!--  添加按钮  -->
             <hc:TransitioningContentControl
                 HorizontalAlignment="Left"
@@ -61,8 +60,6 @@
                     Content="&#xE948;"
                     Style="{StaticResource ControlButtonStyle}" />
             </hc:TransitioningContentControl>
-
-
             <!--  返回按钮  -->
             <hc:TransitioningContentControl
                 HorizontalAlignment="Left"
@@ -73,8 +70,15 @@
                     Content="&#xE76B;"
                     Style="{StaticResource ControlButtonStyle}" />
             </hc:TransitioningContentControl>
-
-
+            <!--  窗口标题  -->
+            <TextBlock
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                FontSize="16"
+                IsHitTestVisible="False"
+                Text="{Binding Title}" />
+            <!--  设置与关闭按钮  -->
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
 
                 <!--  设置按钮  -->
@@ -90,29 +94,21 @@
                     Content="&#xE947;"
                     Style="{DynamicResource CloseButtonStyle}" />
             </StackPanel>
-
-            <!--  窗口标题  -->
-            <TextBlock
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Background="Transparent"
-                FontSize="16"
-                IsHitTestVisible="False"
-                Text="{Binding Title}" />
-
         </Grid>
 
         <!--  内容  -->
         <hc:TransitioningContentControl
             Grid.Row="1"
-            Content="{Binding AlertsView}"
             TransitionMode="Fade"
-            Visibility="{Binding IsSettingsVisible, Converter={StaticResource Boolean2VisibilityReConverter}}" />
+            Visibility="{Binding IsSettingsVisible, Converter={StaticResource Boolean2VisibilityReConverter}}">
+            <local:AlertsView DataContext="{Binding AlertsViewModel}" />
+        </hc:TransitioningContentControl>
         <hc:TransitioningContentControl
             Grid.Row="1"
-            Content="{Binding SettingsView}"
             TransitionMode="Fade"
-            Visibility="{Binding IsSettingsVisible, Converter={StaticResource Boolean2VisibilityConverter}}" />
+            Visibility="{Binding IsSettingsVisible, Converter={StaticResource Boolean2VisibilityConverter}}">
+            <local:SettingsView DataContext="{Binding SettingsViewModel}" />
+        </hc:TransitioningContentControl>
 
         <!--  托盘图标  -->
         <hc:NotifyIcon

@@ -43,9 +43,7 @@ namespace StickyAlerts
                     // 添加视图和视图模型
                     services.AddSingleton<ShellWindow>();
                     services.AddSingleton<ShellViewModel>();
-                    services.AddSingleton<AlertsView>();
                     services.AddSingleton<AlertsViewModel>();
-                    services.AddSingleton<SettingsView>();
                     services.AddSingleton<SettingsViewModel>();
                     // 添加配置类
                     services.Configure<UserSettings>(context.Configuration.GetSection("UserSettings"));
@@ -61,11 +59,14 @@ namespace StickyAlerts
             await Host.StartAsync();
 
             var userSettings = Host.Services.GetRequiredService<ISettingsService<UserSettings>>();
-            var shellService = Host.Services.GetRequiredService<IShellService>();
-
+            var shellViewModel = Host.Services.GetRequiredService<ShellViewModel>();
+            var shellWindow = Host.Services.GetRequiredService<ShellWindow>();
+            shellWindow.DataContext = shellViewModel;
             // 根据设置显示或隐藏主窗口
-            shellService.ShowShell();
-            if (!userSettings.Current.HideShell) shellService.HideShell();
+
+            shellWindow.Show();
+            shellWindow.Activate();
+            if (userSettings.Current.HideShell) shellWindow.Hide();
             App.Current.MainWindow = Host.Services.GetRequiredService<ShellWindow>();
 
             // 应用所有设置（此时 ShellWindow 已经被创建，随之所有 AlertWindow 也被创建）

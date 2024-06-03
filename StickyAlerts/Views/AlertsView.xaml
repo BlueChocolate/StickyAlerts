@@ -11,79 +11,117 @@
     d:DesignHeight="450"
     d:DesignWidth="800"
     mc:Ignorable="d">
-    <Grid>
+    <UserControl.Resources>
+        <DataTemplate x:Key="AlertListTemplate" DataType="{x:Type viewmodels:AlertViewModel}">
+            <hc:Card Name="AlertCard" Margin="5,5,5,0">
+                <hc:SimpleStackPanel>
+                    <!--  标题  -->
+                    <TextBox
+                        Margin="5"
+                        VerticalAlignment="Center"
+                        DockPanel.Dock="Right"
+                        Style="{DynamicResource UnderlineTextBoxStyle}"
+                        Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <!--  日期选择和按钮组  -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <hc:DateTimePicker
+                            Height="30"
+                            Margin="5"
+                            Background="{DynamicResource TertiarySmokeBackgroundBrush}"
+                            Cursor="Hand"
+                            Foreground="{DynamicResource TertiaryForegroundBrush}"
+                            SelectedDateTime="{Binding Deadline}" />
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <ToggleButton
+                                Margin="5,0,5,0"
+                                Content="展示"
+                                Cursor="Hand"
+                                IsChecked="{Binding AlertVisible}"
+                                Style="{DynamicResource ToggleButtonSwitch.Small}" />
+                            <Button
+                                Width="30"
+                                Height="20"
+                                Margin="5,0,0,0"
+                                BorderThickness="0"
+                                Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource FindAncestor, AncestorType=UserControl}}"
+                                CommandParameter="{Binding Id}"
+                                Content="&#xE74D;"
+                                Cursor="Hand"
+                                FontFamily="Segoe Fluent Icons"
+                                Style="{DynamicResource ButtonDanger.Small}" />
+
+                            <ToggleButton
+                                Name="PopupToggleButton"
+                                Width="30"
+                                Height="20"
+                                Margin="5,0,5,0"
+                                Content="&#xE70F;"
+                                Cursor="Hand"
+                                FontFamily="Segoe Fluent Icons"
+                                Style="{DynamicResource ToggleButtonPrimary.Small}" />
+                            <Popup
+                                AllowsTransparency="True"
+                                IsOpen="{Binding IsChecked, ElementName=PopupToggleButton}"
+                                Placement="Right"
+                                PlacementTarget="{Binding ElementName=AlertCard}"
+                                PopupAnimation="Fade"
+                                StaysOpen="False">
+                                <Border
+                                    MinWidth="200"
+                                    Background="{DynamicResource RegionBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                    <hc:PropertyGrid SelectedObject="{Binding}" />
+                                </Border>
+                            </Popup>
+                        </StackPanel>
+                    </Grid>
+                </hc:SimpleStackPanel>
+            </hc:Card>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
         <hc:ScrollViewer>
-            <ItemsControl
-                BorderThickness="0"
-                ItemsSource="{Binding AlertService.Alerts}"
-                ScrollViewer.CanContentScroll="False"
-                ScrollViewer.VerticalScrollBarVisibility="Auto">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <hc:Card Margin="5,5,5,0">
-                            <StackPanel>
-
-                                <!--  标题  -->
-                                <TextBox
-                                    Margin="5"
-                                    VerticalAlignment="Center"
-                                    DockPanel.Dock="Right"
-                                    Style="{DynamicResource UnderlineTextBoxStyle}"
-                                    Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" />
-
-                                <!--  日期选择和按钮组  -->
-                                <Grid Grid.Row="2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Orientation="Horizontal">
-                                        <hc:DateTimePicker
-                                            Height="30"
-                                            Margin="5"
-                                            Background="{DynamicResource TertiarySmokeBackgroundBrush}"
-                                            BorderThickness="0,0,0,2"
-                                            Cursor="Hand"
-                                            Foreground="{DynamicResource TertiaryForegroundBrush}"
-                                            SelectedDateTime="{Binding Deadline}" />
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                        <ToggleButton
-                                            Margin="5"
-                                            Content="显示"
-                                            Cursor="Hand"
-                                            IsChecked="{Binding IsVisible}"
-                                            Style="{DynamicResource ToggleButtonSwitch.Small}" />
-                                        <Button
-                                            Margin="5"
-                                            Command="{Binding DataContext.RemoveCountdownCommand, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
-                                            CommandParameter="{Binding}"
-                                            Content="&#xE74D;"
-                                            FontFamily="Segoe Fluent Icons"
-                                            Foreground="{DynamicResource ValidationBrush}"
-                                            Style="{DynamicResource IconButtonStyle}" />
-                                    </StackPanel>
-                                </Grid>
-
-                                <Expander Margin="5" Header="内容">
-                                    <!--  备注  -->
-                                    <Border>
-                                        <TextBox
-                                            AcceptsReturn="True"
-                                            Style="{DynamicResource UnderlineTextBoxStyle}"
-                                            Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}"
-                                            TextWrapping="Wrap" />
-                                    </Border>
-
-                                </Expander>
-                            </StackPanel>
-                        </hc:Card>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <hc:SimpleStackPanel>
+                <Expander
+                    hc:BorderElement.CornerRadius="0"
+                    BorderThickness="0,0,0,1"
+                    Cursor="Hand"
+                    IsExpanded="True">
+                    <Expander.Header>
+                        <TextBlock Text="{Binding ActivedAlerts.Count, StringFormat={}进行中（共 {0} 个）}" />
+                    </Expander.Header>
+                    <ItemsControl
+                        BorderThickness="0"
+                        ItemTemplate="{DynamicResource AlertListTemplate}"
+                        ItemsSource="{Binding ActivedAlerts}"
+                        ScrollViewer.CanContentScroll="False"
+                        ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                </Expander>
+                <Expander
+                    hc:BorderElement.CornerRadius="0"
+                    BorderThickness="0,0,0,1"
+                    Cursor="Hand"
+                    IsExpanded="False">
+                    <Expander.Header>
+                        <TextBlock Text="{Binding UnactivedAlerts.Count, StringFormat={}已到期（共 {0} 个）}" />
+                    </Expander.Header>
+                    <ItemsControl
+                        BorderThickness="0"
+                        ItemTemplate="{DynamicResource AlertListTemplate}"
+                        ItemsSource="{Binding UnactivedAlerts}"
+                        ScrollViewer.CanContentScroll="False"
+                        ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                </Expander>
+            </hc:SimpleStackPanel>
         </hc:ScrollViewer>
-
-    </Grid>
+    </Border>
 </UserControl>

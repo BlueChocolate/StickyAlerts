@@ -18,9 +18,8 @@ namespace StickyAlerts.ViewModels
 {
     public partial class SettingsViewModel : ObservableObject
     {
-        private readonly IAlertService _alertService;
-        private readonly ISettingsService<UserSettings> _userSettingsService;
         private readonly ILogger _logger;
+        private readonly ISettingsService<UserSettings> _userSettingsService;
 
         [Category("显示")]
         [DisplayName("语言")]
@@ -95,11 +94,10 @@ namespace StickyAlerts.ViewModels
             set => SetUserSettingsProperty(_userSettingsService.Current.AlertsPath, value, true);
         }
 
-        public SettingsViewModel(ISettingsService<UserSettings> userConfig, ILogger<SettingsViewModel> logger, IAlertService alertService)
+        public SettingsViewModel(ISettingsService<UserSettings> userConfig, ILogger<SettingsViewModel> logger)
         {
             _logger = logger;
             _userSettingsService = userConfig;
-            _alertService = alertService;
             _userSettingsService.OnFileChanged((oldValue, newValue, name) =>
             {
                 SetUserSettingsProperty(oldValue, newValue, false, name);

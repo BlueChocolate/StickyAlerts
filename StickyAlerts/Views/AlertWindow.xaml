@@ -7,63 +7,96 @@
     xmlns:local="clr-namespace:StickyAlerts.Views"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:StickyAlerts.Models"
+    xmlns:viewmodels="clr-namespace:StickyAlerts.ViewModels"
     Title="AlertWindow"
     Width="300"
-    d:DataContext="{d:DesignInstance Type=models:Alert}"
+    d:DataContext="{d:DesignInstance Type=viewmodels:AlertViewModel}"
     hc:WindowAttach.IgnoreAltF4="True"
     hc:WindowAttach.ShowInTaskManager="False"
     Background="{DynamicResource RegionBrush}"
     BorderThickness="1"
-    Left="{Binding Left}"
+    Left="{Binding Left, Mode=OneWay}"
     ResizeMode="NoResize"
     ShowInTaskbar="False"
     ShowNonClientArea="False"
     SizeToContent="Height"
-    Top="{Binding Top}"
+    Top="{Binding Top, Mode=OneWay}"
     Topmost="{Binding Topmost}"
-    Visibility="{Binding IsVisible, Converter={StaticResource Boolean2VisibilityConverter}}"
+    Visibility="{Binding AlertVisible, Mode=TwoWay, Converter={StaticResource Boolean2VisibilityConverter}}"
     mc:Ignorable="d">
     <Grid hc:WindowAttach.IsDragElement="True" Background="Transparent">
-        <Grid.InputBindings>
-            <!--<MouseBinding Command="{Binding ShowMainWindowCommand}" MouseAction="LeftDoubleClick" />-->
-        </Grid.InputBindings>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Grid.ContextMenu>
-            <ContextMenu>
-                <MenuItem Header="打开便笺列表" Icon="{StaticResource HomeIconTextBlock}" />
-                <MenuItem Header="隐藏便笺" Icon="{StaticResource HideIconTextBlock}" />
-                <MenuItem Header="删除便笺" Icon="{StaticResource DeleteIconTextBlock}" />
-                <MenuItem Header="对齐便笺" Icon="{StaticResource AlginIconTextBlock}" />
+            <ContextMenu Width="200">
+                <MenuItem
+                    Command="{Binding ShowShellCommand}"
+                    Header="打开便笺列表"
+                    Icon="{StaticResource HomeIconTextBlock}" />
+                <MenuItem
+                    Command="{Binding DeleteCommand}"
+                    Header="删除便笺"
+                    Icon="{StaticResource DeleteIconTextBlock}" />
+                <MenuItem
+                    Command="{Binding AlginCommand}"
+                    Header="对齐便笺"
+                    Icon="{StaticResource AlginIconTextBlock}" />
+                <Separator Style="{DynamicResource SeparatorBaseStyle}" />
                 <MenuItem
                     Header="窗体置顶"
                     IsCheckable="True"
                     IsChecked="{Binding Topmost}" />
-                <MenuItem Header="退出程序" Icon="{StaticResource ExitIconTextBlock}" />
+                <MenuItem
+                    Header="便笺可见"
+                    Icon="{StaticResource HideIconTextBlock}"
+                    IsCheckable="True"
+                    IsChecked="{Binding AlertVisible}" />
+                <MenuItem
+                    Header="注释可见"
+                    IsCheckable="True"
+                    IsChecked="{Binding NoteVisible}" />
+                <MenuItem
+                    Header="倒计时可见"
+                    IsCheckable="True"
+                    IsChecked="{Binding CountdownVisible}" />
+                <Separator Style="{DynamicResource SeparatorBaseStyle}" />
+                <MenuItem
+                    Command="{Binding ExitCommand}"
+                    Header="退出程序"
+                    Icon="{StaticResource ExitIconTextBlock}" />
             </ContextMenu>
         </Grid.ContextMenu>
+
         <Border Height="10" Background="{DynamicResource PrimaryBrush}" />
-        <TextBlock
+
+        <!--  标题  -->
+        <hc:TextBox
             Grid.Row="1"
-            Margin="10,10,10,0"
+            Margin="10,10,10,10"
+            Padding="0"
+            BorderThickness="0"
+            ContextMenu="{x:Null}"
             FontSize="20"
             FontWeight="Bold"
             Foreground="{DynamicResource PrimaryTextBrush}"
-            Text="{Binding Title, StringFormat=距离{0}还有}"
+            Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}"
             TextWrapping="Wrap" />
 
+        <!--  剩余时间  -->
         <StackPanel
             Grid.Row="2"
-            Margin="10,0,10,10"
-            Orientation="Horizontal">
+            Margin="10,-10,10,0"
+            Orientation="Horizontal"
+            Visibility="{Binding CountdownVisible, Converter={StaticResource Boolean2VisibilityConverter}}">
             <TextBlock
                 VerticalAlignment="Bottom"
                 FontSize="50"
                 Foreground="{DynamicResource PrimaryBrush}"
-                Text="{Binding Remaining.Days}" />
+                Text="{Binding Remaining.Days, Mode=OneWay}" />
             <TextBlock
                 Margin="5,0,5,10"
                 VerticalAlignment="Bottom"
@@ -75,7 +108,7 @@
                 VerticalAlignment="Bottom"
                 FontSize="50"
                 Foreground="{DynamicResource PrimaryBrush}"
-                Text="{Binding Remaining.Hours}" />
+                Text="{Binding Remaining.Hours, Mode=OneWay}" />
             <TextBlock
                 Margin="5,0,5,10"
                 VerticalAlignment="Bottom"
@@ -87,7 +120,7 @@
                 VerticalAlignment="Bottom"
                 FontSize="50"
                 Foreground="{DynamicResource PrimaryBrush}"
-                Text="{Binding Remaining.Minutes}" />
+                Text="{Binding Remaining.Minutes, Mode=OneWay}" />
             <TextBlock
                 Margin="5,0,5,10"
                 VerticalAlignment="Bottom"
@@ -96,5 +129,21 @@
                 Foreground="{DynamicResource SecondaryTextBrush}"
                 Text="分" />
         </StackPanel>
+
+        <!--  详情信息  -->
+        <Border
+            Grid.Row="3"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="0,1,0,0"
+            Visibility="{Binding NoteVisible, Converter={StaticResource Boolean2VisibilityConverter}}">
+            <hc:TextBox
+                Margin="10,10,10,10"
+                AcceptsReturn="True"
+                BorderThickness="0"
+                Foreground="{DynamicResource SecondaryTextBrush}"
+                Style="{DynamicResource TextBoxExtend}"
+                Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}"
+                TextWrapping="Wrap" />
+        </Border>
     </Grid>
 </hc:Window>

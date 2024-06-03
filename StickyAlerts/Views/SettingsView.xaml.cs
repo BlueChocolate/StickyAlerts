@@ -21,10 +21,9 @@ namespace StickyAlerts.Views
     /// </summary>
     public partial class SettingsView : UserControl
     {
-        public SettingsView(SettingsViewModel settingsViewModel)
+        public SettingsView()
         {
             InitializeComponent();
-            DataContext = settingsViewModel;
         }
     }
 }
